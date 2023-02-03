@@ -1,24 +1,34 @@
-const { getCsvFileJson, getCompanyData, getCompanyInEachSector } = require('../utils/externalAPI');
+const externalApi = require('../utils/externalAPI');
 const db = require('../../database/models');
+const { HTTPError } = require('../utils/errors');
 
 const getCsvData = async (urlLink) => {
-  const csvJsonData = await getCsvFileJson(urlLink);
+  const csvJsonData = await externalApi.getCsvFileJson(urlLink);
+  if (!csvJsonData) {
+    throw new HTTPError(400, 'Invalid url');
+  }
   return csvJsonData;
 };
 
 const getAllCompanies = async () => {
   const allCompanies = await db.companies.findAll();
+  if (!allCompanies) {
+    throw new HTTPError(400, 'No companies found');
+  }
   return allCompanies;
 };
 const getAllScores = async () => {
   const allScores = await db.companyScore.findAll({
-    order: ['score', 'DESC'],
+    order: [['score', 'DESC']],
   });
   return allScores;
 };
 
 const addCompanyData = async (companyData) => {
-  const fetchedCompanyData = await getCompanyData(companyData.company_id);
+  const fetchedCompanyData = await externalApi.getCompanyData(companyData.company_id);
+  if (!fetchedCompanyData) {
+    throw new HTTPError(400, 'Invalid company id');
+  }
   const newCompanyData = {
     companyId: fetchedCompanyData.id,
     name: fetchedCompanyData.name,
@@ -36,16 +46,18 @@ const addCompanyScore = async (companyScore) => {
 };
 
 const getCompaniesInEachSector = async (sector) => {
-  const companies = await getCompanyInEachSector(sector);
-  const companyScores = Promise.all(companies.map(async (company) => {
+  const companies = await externalApi.getCompanyInEachSector(sector);
+  return Promise.all(companies.map(async (company) => {
     try {
-
       const performanceIndex = {};
       company.performanceIndex.forEach((factor) => {
         performanceIndex[factor.key] = factor.value;
       });
       const score = ((performanceIndex.cpi * 10) + (performanceIndex.cf / 10000) + (performanceIndex.mau * 10) + performanceIndex.roic) / 4;
       const data = await addCompanyData({ company_id: company.companyId });
+      if (!data) {
+        throw new HTTPError(400, 'Invalid company id');
+      }
       const companyScore = await addCompanyScore({
         companyId: company.companyId,
         companyName: data.dataValues.name,
@@ -57,7 +69,6 @@ const getCompaniesInEachSector = async (sector) => {
       return null;
     }
   }));
-  return companyScores;
 };
 
 const getCompanyScoresInSector = async (sector) => {
@@ -69,6 +80,17 @@ const getCompanyScoresInSector = async (sector) => {
   return companyScores;
 };
 
+const updateCompanyCeo = async (companyId, ceoName) => {
+  const companyData = await db.companies.update({
+    ceo: ceoName,
+  }, {
+    where: {
+      companyId: companyId,
+    }
+  });
+  return companyData;
+};
+
 
 module.exports = {
   getCsvData,
@@ -76,5 +98,6 @@ module.exports = {
   getCompaniesInEachSector,
   getAllCompanies,
   getAllScores,
-  getCompanyScoresInSector
+  getCompanyScoresInSector,
+  updateCompanyCeo,
 };
