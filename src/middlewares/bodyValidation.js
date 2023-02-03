@@ -2,7 +2,7 @@ const Joi = require('joi');
 
 const bodyValidation = (req, res, next) => {
   const schema = Joi.object({
-    urlLink: Joi.uri().required(),
+    urlLink: Joi.string().uri().required(),
   });
   const { error } = schema.validate(req.body);
   if (error) {

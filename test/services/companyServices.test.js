@@ -3,6 +3,7 @@
 // const { jest, describe, it, expect } = require('@jest/globals');
 const companyControllers = require('../../src/controllers/companyControllers');
 const companyServices = require('../../src/services/companyServices');
+const { HTTPError } = require('../../src/utils/errors');
 const externalApi = require('../../src/utils/externalAPI');
 
 describe('Company Services', () => {
@@ -14,30 +15,10 @@ describe('Company Services', () => {
       expect(data).toBe('something');
     });
     it('Should give 404 error message', async () => {
-
-      jest.spyOn(externalApi, 'getCsvFileJson').mockResolvedValue('something');
-      const data = await companyServices.getCsvData("some link");
-      expect(data).toBe('something');̀
+      jest.spyOn(externalApi, 'getCsvFileJson').mockResolvedValue(null);
+      expect(() => companyServices.getCsvData('some link')).toThrow(HTTPError);
     });
-    // it('Should give 400 error message', async () => {
-    //   const mockReq = {
-    //     body: {
-    //       urlLink: 'something',
-    //     }
-    //   };
-    //   const mockRes = {
-    //     status: jest.fn().mockReturnThis(),
-    //     json: jest.fn(),
-    //   };
-    //   jest.spyOn(companyServices, 'getCsvData').mockRejectedValue('something');
-    //   jest.spyOn(companyServices, 'getCompaniesInEachSector').mockRejectedValue('something');
-    //   jest.spyOn(externalApi, 'getAllSectors').mockRejectedValue('something');
-    //   await companyControllers.fetchCompanyScoreAndStore(mockReq, mockRes);
-    //   expect(mockRes.status).toBeCalledWith(400);
-    //   expect(mockRes.json).toBeCalledWith({
-    //     message: 'Something went wrong',
-    //   });
-    // });
+
   });
   describe('Get all companies', () => {
     it('Should give all companies', async () => {
