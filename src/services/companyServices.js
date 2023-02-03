@@ -11,7 +11,9 @@ const getAllCompanies = async () => {
   return allCompanies;
 };
 const getAllScores = async () => {
-  const allScores = await db.companyScore.findAll();
+  const allScores = await db.companyScore.findAll({
+    order: ['score', 'DESC'],
+  });
   return allScores;
 };
 
@@ -35,9 +37,9 @@ const addCompanyScore = async (companyScore) => {
 
 const getCompaniesInEachSector = async (sector) => {
   const companies = await getCompanyInEachSector(sector);
-  const companyScores = companies.map(async (company) => {
+  const companyScores = Promise.all(companies.map(async (company) => {
     try {
-      // const companyData = await getCompanyData(company.companyId);
+
       const performanceIndex = {};
       company.performanceIndex.forEach((factor) => {
         performanceIndex[factor.key] = factor.value;
@@ -46,7 +48,7 @@ const getCompaniesInEachSector = async (sector) => {
       const data = await addCompanyData({ company_id: company.companyId });
       const companyScore = await addCompanyScore({
         companyId: company.companyId,
-        name: data.name,
+        companyName: data.dataValues.name,
         score: score,
         sector: sector
       });
@@ -54,7 +56,7 @@ const getCompaniesInEachSector = async (sector) => {
     } catch (err) {
       return null;
     }
-  });
+  }));
   return companyScores;
 };
 
