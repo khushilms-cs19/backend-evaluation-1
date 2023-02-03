@@ -11,12 +11,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      this.belongsTo(models.companies, {
+        foreignKey: 'companyId',
+      });
     }
   }
   companyScore.init({
     companyId: DataTypes.STRING,
     companyName: DataTypes.STRING,
-    score: DataTypes.FLOAT
+    score: DataTypes.FLOAT,
+    sector: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'companyScore',

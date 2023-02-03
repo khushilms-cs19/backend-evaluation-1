@@ -1,9 +1,18 @@
-const { getCsvFileJson, getCompanyData } = require('../utils/externalAPI');
+const { getCsvFileJson, getCompanyData, getCompanyInEachSector } = require('../utils/externalAPI');
 const db = require('../../database/models');
 
 const getCsvData = async (urlLink) => {
   const csvJsonData = await getCsvFileJson(urlLink);
   return csvJsonData;
+};
+
+const getAllCompanies = async () => {
+  const allCompanies = await db.companies.findAll();
+  return allCompanies;
+};
+const getAllScores = async () => {
+  const allScores = await db.companyScore.findAll();
+  return allScores;
 };
 
 const addCompanyData = async (companyData) => {
@@ -19,7 +28,51 @@ const addCompanyData = async (companyData) => {
   return data;
 };
 
+const addCompanyScore = async (companyScore) => {
+  const newCompanyScore = await db.companyScore.create(companyScore);
+  return newCompanyScore;
+};
+
+const getCompaniesInEachSector = async (sector) => {
+  const companies = await getCompanyInEachSector(sector);
+  const companyScores = companies.map(async (company) => {
+    try {
+      // const companyData = await getCompanyData(company.companyId);
+      const performanceIndex = {};
+      company.performanceIndex.forEach((factor) => {
+        performanceIndex[factor.key] = factor.value;
+      });
+      const score = ((performanceIndex.cpi * 10) + (performanceIndex.cf / 10000) + (performanceIndex.mau * 10) + performanceIndex.roic) / 4;
+      const data = await addCompanyData({ company_id: company.companyId });
+      const companyScore = await addCompanyScore({
+        companyId: company.companyId,
+        name: data.name,
+        score: score,
+        sector: sector
+      });
+      return companyScore;
+    } catch (err) {
+      return null;
+    }
+  });
+  return companyScores;
+};
+
+const getCompanyScoresInSector = async (sector) => {
+  const companyScores = await db.companyScore.findAll({
+    where: {
+      sector: sector,
+    }
+  });
+  return companyScores;
+};
+
+
 module.exports = {
   getCsvData,
   addCompanyData,
+  getCompaniesInEachSector,
+  getAllCompanies,
+  getAllScores,
+  getCompanyScoresInSector
 };

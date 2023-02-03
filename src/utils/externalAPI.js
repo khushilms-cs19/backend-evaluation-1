@@ -20,7 +20,22 @@ const getCompanyData = async (companyId) => {
   return companyData.data;
 };
 
+const getAllSectors = async (companyData) => {
+  const allSectors = Array.from(new Set(companyData.map((company) => company.company_sector)));
+  return allSectors;
+};
+
+const getCompanyInEachSector = async (sector) => {
+  const companies = await axios({
+    method: 'GET',
+    url: `http://54.167.46.10/sector?name=${sector}`,
+  });
+  return companies.data;
+};
+
 module.exports = {
   getCsvFileJson,
-  getCompanyData
+  getCompanyData,
+  getAllSectors,
+  getCompanyInEachSector,
 };
